@@ -229,9 +229,13 @@ async def upload_csv(file: UploadFile = File(...)):
     reader = csv.DictReader(io.StringIO(text))
 
     results = []
-    for row in reader:
+    errors = []
+    for i, row in enumerate(reader):
         row["source"] = "csv"
-        result = await lead_service.create_lead(row)
-        results.append(result)
+        try:
+            result = await lead_service.create_lead(row)
+            results.append(result)
+        except Exception as e:
+            errors.append({"row": i + 1, "email": row.get("email", ""), "error": str(e)})
 
-    return {"uploaded": len(results), "leads": results}
+    return {"uploaded": len(results), "leads": results, "errors": errors}

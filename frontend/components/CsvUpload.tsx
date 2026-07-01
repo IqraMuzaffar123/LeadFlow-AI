@@ -17,15 +17,22 @@ export function CsvUpload({ onUploadComplete }: { onUploadComplete: (r: { upload
     const handleUpload = async () => {
         if (!file) return;
         setUploading(true);
-        const fd = new FormData();
-        fd.append("file", file);
-        const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"}/leads/upload-csv`,
-            { method: "POST", body: fd }
-        );
-        const data = await res.json();
-        setUploading(false); setFile(null);
-        onUploadComplete(data);
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"}/leads/upload-csv`,
+                { method: "POST", body: fd }
+            );
+            if (!res.ok) throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
+            const data = await res.json();
+            setFile(null);
+            onUploadComplete(data);
+        } catch (err) {
+            console.error("CSV upload error:", err);
+        } finally {
+            setUploading(false);
+        }
     };
 
     return (

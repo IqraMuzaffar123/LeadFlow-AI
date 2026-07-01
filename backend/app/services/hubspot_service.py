@@ -26,6 +26,7 @@ async def find_contact_by_email(email: str) -> str | None:
                 }]
             },
         )
+        resp.raise_for_status()
         data = resp.json()
         if data.get("total", 0) > 0:
             return data["results"][0]["id"]
@@ -51,6 +52,7 @@ async def create_contact(lead: dict, ai_score: int = 0,
                 }
             },
         )
+        resp.raise_for_status()
         return resp.json()["id"]
 
 
@@ -76,6 +78,7 @@ async def create_deal(contact_id: str, lead: dict,
                 }]
             },
         )
+        resp.raise_for_status()
         return resp.json()["id"]
 
 
@@ -97,6 +100,7 @@ async def create_note(contact_id: str, content: str) -> str:
                 }]
             },
         )
+        resp.raise_for_status()
         return resp.json()["id"]
 
 
