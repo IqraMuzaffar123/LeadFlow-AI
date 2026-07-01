@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db, close_db
+from app.routers.leads import router as leads_router
 
 
 @asynccontextmanager
@@ -30,3 +31,6 @@ app.add_middleware(
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "service": "leadflow-ai"}
+
+
+app.include_router(leads_router)
