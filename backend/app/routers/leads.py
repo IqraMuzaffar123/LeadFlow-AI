@@ -1,11 +1,14 @@
 import csv
 import io
+import time
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 from app.models import (
     LeadIngestRequest, LeadIngestResponse, LeadResponse,
-    LeadDetailResponse, LeadListResponse, StatsResponse,
+    LeadDetailResponse, LeadListResponse, StatsResponse, ProcessResponse,
 )
 from app.services import lead_service
+from app.services import ai_service
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
 
@@ -34,6 +37,131 @@ async def list_leads(
 @router.get("/stats", response_model=StatsResponse)
 async def get_stats():
     return await lead_service.get_stats()
+
+
+@router.post("/qualify/{lead_id}")
+async def qualify_lead(lead_id: str):
+    lead = await lead_service.get_lead(lead_id)
+    if lead is None:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    start = time.time()
+    await lead_service.update_lead(lead_id, {"status": "qualifying"})
+    await lead_service.log_processing_step(lead_id, "qualify", "started")
+
+    result = await ai_service.qualify_lead(lead)
+    duration_ms = int((time.time() - start) * 1000)
+
+    await lead_service.update_lead(lead_id, {
+        "ai_score": result["score"],
+        "ai_category": result["category"],
+        "ai_reasoning": result["reasoning"],
+        "status": "qualified",
+        "ai_qualified_at": datetime.now(timezone.utc),
+    })
+    await lead_service.log_processing_step(
+        lead_id, "qualify", "completed", duration_ms, result
+    )
+
+    return {"lead_id": lead_id, "qualification": result}
+
+
+@router.post("/generate-emails/{lead_id}")
+async def generate_emails(lead_id: str):
+    lead = await lead_service.get_lead(lead_id)
+    if lead is None:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    start = time.time()
+    await lead_service.update_lead(lead_id, {"status": "generating_emails"})
+    await lead_service.log_processing_step(lead_id, "email_gen", "started")
+
+    qualification = {
+        "score": lead.get("ai_score", 0),
+        "category": lead.get("ai_category", "unknown"),
+        "buying_signals": [],
+    }
+    result = await ai_service.generate_emails(lead, qualification)
+    duration_ms = int((time.time() - start) * 1000)
+
+    await lead_service.save_emails(lead_id, result["email_1"], result["email_2"])
+    await lead_service.update_lead(lead_id, {"status": "emails_ready"})
+    await lead_service.log_processing_step(
+        lead_id, "email_gen", "completed", duration_ms
+    )
+
+    return {"lead_id": lead_id, "emails": result}
+
+
+@router.post("/process/{lead_id}", response_model=ProcessResponse)
+async def process_lead(lead_id: str):
+    lead = await lead_service.get_lead(lead_id)
+    if lead is None:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    try:
+        # Step 1: Qualify
+        start = time.time()
+        await lead_service.update_lead(lead_id, {"status": "qualifying"})
+        await lead_service.log_processing_step(lead_id, "qualify", "started")
+
+        qualification = await ai_service.qualify_lead(lead)
+        duration_ms = int((time.time() - start) * 1000)
+
+        await lead_service.update_lead(lead_id, {
+            "ai_score": qualification["score"],
+            "ai_category": qualification["category"],
+            "ai_reasoning": qualification["reasoning"],
+            "status": "qualified",
+            "ai_qualified_at": datetime.now(timezone.utc),
+        })
+        await lead_service.log_processing_step(
+            lead_id, "qualify", "completed", duration_ms, qualification
+        )
+
+        # Step 2: Generate emails (only for hot/warm)
+        emails_generated = 0
+        if qualification["category"] in ("hot", "warm"):
+            start = time.time()
+            await lead_service.update_lead(lead_id, {"status": "generating_emails"})
+            await lead_service.log_processing_step(lead_id, "email_gen", "started")
+
+            emails = await ai_service.generate_emails(lead, qualification)
+            duration_ms = int((time.time() - start) * 1000)
+
+            await lead_service.save_emails(lead_id, emails["email_1"], emails["email_2"])
+            await lead_service.update_lead(lead_id, {"status": "emails_ready"})
+            await lead_service.log_processing_step(
+                lead_id, "email_gen", "completed", duration_ms
+            )
+            emails_generated = 2
+
+        # Final status (HubSpot sync will be added in Phase 3)
+        final_status = "emails_ready" if emails_generated > 0 else "qualified"
+        await lead_service.update_lead(lead_id, {"status": final_status})
+
+        return ProcessResponse(
+            lead_id=lead_id,
+            status=final_status,
+            ai_score=qualification["score"],
+            ai_category=qualification["category"],
+            emails_generated=emails_generated,
+            hubspot_synced=False,
+        )
+
+    except Exception as e:
+        await lead_service.update_lead(lead_id, {
+            "status": "error",
+            "error_message": str(e),
+        })
+        await lead_service.log_processing_step(
+            lead_id, "pipeline", "error", details={"error": str(e)}
+        )
+        return ProcessResponse(
+            lead_id=lead_id,
+            status="error",
+            error=str(e),
+        )
 
 
 @router.get("/{lead_id}", response_model=LeadDetailResponse)
