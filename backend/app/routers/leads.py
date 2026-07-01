@@ -9,6 +9,7 @@ from app.models import (
 )
 from app.services import lead_service
 from app.services import ai_service
+from app.services import hubspot_service
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
 
@@ -136,17 +137,34 @@ async def process_lead(lead_id: str):
             )
             emails_generated = 2
 
-        # Final status (HubSpot sync will be added in Phase 3)
-        final_status = "emails_ready" if emails_generated > 0 else "qualified"
-        await lead_service.update_lead(lead_id, {"status": final_status})
+        # Step 3: Sync to HubSpot
+        hubspot_synced = False
+        start = time.time()
+        await lead_service.update_lead(lead_id, {"status": "syncing"})
+        await lead_service.log_processing_step(lead_id, "hubspot_sync", "started")
+
+        hubspot_ids = await hubspot_service.sync_lead_to_hubspot(
+            lead, qualification
+        )
+        duration_ms = int((time.time() - start) * 1000)
+
+        await lead_service.update_lead(lead_id, {
+            "hubspot_contact_id": hubspot_ids["contact_id"],
+            "hubspot_deal_id": hubspot_ids["deal_id"],
+            "status": "synced",
+        })
+        await lead_service.log_processing_step(
+            lead_id, "hubspot_sync", "completed", duration_ms
+        )
+        hubspot_synced = True
 
         return ProcessResponse(
             lead_id=lead_id,
-            status=final_status,
+            status="synced",
             ai_score=qualification["score"],
             ai_category=qualification["category"],
             emails_generated=emails_generated,
-            hubspot_synced=False,
+            hubspot_synced=hubspot_synced,
         )
 
     except Exception as e:
@@ -162,6 +180,38 @@ async def process_lead(lead_id: str):
             status="error",
             error=str(e),
         )
+
+
+@router.post("/sync-hubspot/{lead_id}")
+async def sync_hubspot(lead_id: str):
+    lead = await lead_service.get_lead(lead_id)
+    if lead is None:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    start = time.time()
+    await lead_service.update_lead(lead_id, {"status": "syncing"})
+    await lead_service.log_processing_step(lead_id, "hubspot_sync", "started")
+
+    qualification = {
+        "score": lead.get("ai_score", 0),
+        "category": lead.get("ai_category", "unknown"),
+        "reasoning": lead.get("ai_reasoning", ""),
+        "buying_signals": [],
+    }
+
+    hubspot_ids = await hubspot_service.sync_lead_to_hubspot(lead, qualification)
+    duration_ms = int((time.time() - start) * 1000)
+
+    await lead_service.update_lead(lead_id, {
+        "hubspot_contact_id": hubspot_ids["contact_id"],
+        "hubspot_deal_id": hubspot_ids["deal_id"],
+        "status": "synced",
+    })
+    await lead_service.log_processing_step(
+        lead_id, "hubspot_sync", "completed", duration_ms
+    )
+
+    return {"lead_id": lead_id, "hubspot": hubspot_ids}
 
 
 @router.get("/{lead_id}", response_model=LeadDetailResponse)
