@@ -56,196 +56,187 @@ export default function DashboardPage() {
 
     const newCount = leads.filter(l => l.status === "new").length;
 
-    if (loading) return (
-        <div className="p-8 flex items-center justify-center min-h-screen">
-            <div className="flex flex-col items-center gap-3">
-                <div
-                    style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: "50%",
-                        border: "2px solid #d6a544",
-                        borderTopColor: "transparent",
-                        animation: "spin 0.8s linear infinite",
-                    }}
-                />
-                <p style={{ color: "#9aa1b0", fontSize: 16 }}>Loading dashboard...</p>
-            </div>
-        </div>
-    );
-
-    return (
-        <div style={{ minHeight: "100vh" }} className="animate-rise">
-            {/* Page header */}
+    /* ── Loading state ── */
+    if (loading)
+        return (
             <div
                 style={{
-                    padding: "32px 36px 24px",
-                    borderBottom: "1px solid rgba(255,255,255,0.06)",
+                    minHeight: "100vh",
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "space-between",
-                    flexWrap: "wrap",
-                    gap: 16,
+                    justifyContent: "center",
+                    background: "#0b1120",
                 }}
             >
-                <div>
-                    <h1
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+                    <div
                         style={{
-                            fontFamily: "'Playfair Display', Georgia, serif",
-                            fontSize: 30,
-                            fontWeight: 700,
-                            color: "#f4f1e8",
-                            margin: 0,
-                            lineHeight: 1.2,
+                            width: 36,
+                            height: 36,
+                            borderRadius: "50%",
+                            border: "2.5px solid #d6a544",
+                            borderTopColor: "transparent",
+                            animation: "spin 0.8s linear infinite",
                         }}
-                    >
-                        Dashboard
-                    </h1>
-                    <p style={{ color: "#9aa1b0", fontSize: 15, marginTop: 6 }}>
-                        AI-powered lead qualification &amp; outreach automation
-                    </p>
+                    />
+                    <p style={{ color: "#79808f", fontSize: 16, margin: 0 }}>Loading dashboard…</p>
+                    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
                 </div>
+            </div>
+        );
 
-                <div style={{ display: "flex", gap: 10 }}>
-                    {newCount > 0 && (
+    /* ── Main layout ── */
+    return (
+        <div style={{ minHeight: "100vh", background: "#0b1120" }}>
+
+            {/* ── Header ── */}
+            <div
+                style={{
+                    background: "linear-gradient(135deg, rgba(12,18,35,0.98) 0%, rgba(20,14,35,0.98) 100%)",
+                    borderBottom: "1px solid rgba(214,165,68,0.12)",
+                    padding: "26px 40px",
+                }}
+            >
+                <div
+                    style={{
+                        maxWidth: 1400,
+                        margin: "0 auto",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: 16,
+                    }}
+                >
+                    {/* Left: label + title + subtitle */}
+                    <div>
+                        <p
+                            style={{
+                                margin: "0 0 6px 0",
+                                fontSize: 12,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.15em",
+                                color: "rgba(214,165,68,0.7)",
+                                fontWeight: 600,
+                            }}
+                        >
+                            PIPELINE OVERVIEW
+                        </p>
+                        <h1
+                            style={{
+                                margin: "0 0 4px 0",
+                                fontSize: 32,
+                                fontWeight: 700,
+                                color: "#f4f1e8",
+                                fontFamily: "'Playfair Display', Georgia, serif",
+                                lineHeight: 1.15,
+                            }}
+                        >
+                            LeadFlow AI
+                        </h1>
+                        <p style={{ margin: 0, fontSize: 17, color: "#8b93a3" }}>
+                            AI-powered lead qualification
+                        </p>
+                    </div>
+
+                    {/* Right: buttons */}
+                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                        <Link href="/upload" style={{ textDecoration: "none" }}>
+                            <button
+                                style={{
+                                    padding: "9px 20px",
+                                    borderRadius: 10,
+                                    fontSize: 15,
+                                    fontWeight: 500,
+                                    background: "transparent",
+                                    border: "1px solid rgba(214,165,68,0.45)",
+                                    color: "#d6a544",
+                                    cursor: "pointer",
+                                    transition: "all 0.15s",
+                                }}
+                                onMouseEnter={e => {
+                                    (e.currentTarget as HTMLButtonElement).style.background = "rgba(214,165,68,0.08)";
+                                    (e.currentTarget as HTMLButtonElement).style.borderColor = "#d6a544";
+                                }}
+                                onMouseLeave={e => {
+                                    (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(214,165,68,0.45)";
+                                }}
+                            >
+                                Upload CSV
+                            </button>
+                        </Link>
                         <button
                             onClick={processAllNew}
-                            disabled={processing}
+                            disabled={processing || newCount === 0}
                             style={{
-                                background: processing ? "rgba(214,165,68,0.4)" : "linear-gradient(135deg, #d6a544, #f4b942)",
-                                color: "#06080d",
+                                padding: "9px 22px",
+                                borderRadius: 10,
+                                fontSize: 15,
+                                fontWeight: 700,
+                                background:
+                                    processing || newCount === 0
+                                        ? "rgba(255,255,255,0.06)"
+                                        : "linear-gradient(135deg, #d6a544 0%, #22c55e 100%)",
                                 border: "none",
-                                borderRadius: 10,
-                                padding: "9px 18px",
-                                fontSize: 15,
-                                fontWeight: 600,
-                                cursor: processing ? "not-allowed" : "pointer",
-                                boxShadow: "0 2px 14px rgba(214,165,68,0.28)",
-                                transition: "opacity 0.18s",
+                                color: processing || newCount === 0 ? "#4b5563" : "#0b1120",
+                                cursor: processing || newCount === 0 ? "default" : "pointer",
+                                transition: "opacity 0.15s",
+                                opacity: processing ? 0.75 : 1,
                             }}
                         >
-                            {processing ? `Processing ${processedCount}/${newCount}...` : `Process All (${newCount} new)`}
+                            {processing
+                                ? `Processing ${processedCount}/${newCount}…`
+                                : newCount > 0
+                                ? `Process All (${newCount} new)`
+                                : "Process All"}
                         </button>
-                    )}
-                    <Link href="/upload" style={{ textDecoration: "none" }}>
-                        <button
-                            style={{
-                                background: "rgba(255,255,255,0.06)",
-                                color: "#f4f1e8",
-                                border: "1px solid rgba(255,255,255,0.12)",
-                                borderRadius: 10,
-                                padding: "9px 18px",
-                                fontSize: 15,
-                                fontWeight: 500,
-                                cursor: "pointer",
-                                backdropFilter: "blur(8px)",
-                                transition: "background 0.18s, border-color 0.18s",
-                            }}
-                        >
-                            Upload CSV
-                        </button>
-                    </Link>
+                    </div>
                 </div>
             </div>
 
-            <div style={{ padding: "28px 36px", maxWidth: 1400, display: "flex", flexDirection: "column", gap: 24 }}>
+            {/* ── Body ── */}
+            <div
+                style={{
+                    maxWidth: 1400,
+                    margin: "0 auto",
+                    padding: "32px 40px 48px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 24,
+                }}
+            >
+                {/* Stats row */}
                 {stats && <StatsCards stats={stats} />}
 
-                {/* Charts Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                    <div className="lg:col-span-2">
-                        <PipelineFunnel data={stats?.pipeline_funnel} />
-                    </div>
-                    <div>
-                        <ScoreDistribution data={stats?.score_distribution} />
-                    </div>
-                    <div>
-                        <CategoryDonut byCategory={stats?.by_category as { hot?: number; warm?: number; cold?: number }} />
-                    </div>
+                {/* Charts row: 2fr 1fr 1fr */}
+                <div
+                    style={{
+                        display: "grid",
+                        gridTemplateColumns: "2fr 1fr 1fr",
+                        gap: 18,
+                        alignItems: "stretch",
+                    }}
+                >
+                    <PipelineFunnel data={stats?.pipeline_funnel} />
+                    <ScoreDistribution data={stats?.score_distribution} />
+                    <CategoryDonut
+                        byCategory={
+                            stats?.by_category as
+                                | { hot?: number; warm?: number; cold?: number }
+                                | undefined
+                        }
+                    />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {stats && (
-                        <Card
-                            className="lg:col-span-1"
-                            style={{
-                                background: "linear-gradient(160deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018))",
-                                backdropFilter: "blur(12px)",
-                                border: "1px solid rgba(255,255,255,0.075)",
-                                borderRadius: 16,
-                                boxShadow: "0 4px 22px rgba(0,0,0,0.45)",
-                            }}
-                        >
-                            <CardHeader>
-                                <CardTitle style={{ color: "#f4f1e8", fontFamily: "'Playfair Display', Georgia, serif", fontSize: 18 }}>
-                                    Pipeline
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent><PipelineChart stats={stats} /></CardContent>
-                        </Card>
-                    )}
-                    <Card
-                        className="lg:col-span-2"
-                        style={{
-                            background: "linear-gradient(160deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018))",
-                            backdropFilter: "blur(12px)",
-                            border: "1px solid rgba(255,255,255,0.075)",
-                            borderRadius: 16,
-                            boxShadow: "0 4px 22px rgba(0,0,0,0.45)",
-                        }}
-                    >
-                        <CardHeader>
-                            <div className="flex items-center justify-between flex-wrap gap-3">
-                                <CardTitle style={{ color: "#f4f1e8", fontFamily: "'Playfair Display', Georgia, serif", fontSize: 18 }}>
-                                    Leads
-                                </CardTitle>
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="Search leads..."
-                                        value={search}
-                                        onChange={e => setSearch(e.target.value)}
-                                        style={{
-                                            padding: "7px 12px",
-                                            borderRadius: 8,
-                                            background: "rgba(255,255,255,0.06)",
-                                            border: "1px solid rgba(255,255,255,0.10)",
-                                            color: "#f4f1e8",
-                                            fontSize: 15,
-                                            width: 180,
-                                            outline: "none",
-                                        }}
-                                    />
-                                    <div className="flex gap-1">
-                                        {[null, "hot", "warm", "cold", "new"].map(f => (
-                                            <button
-                                                key={f || "all"}
-                                                onClick={() => setFilter(f)}
-                                                style={{
-                                                    padding: "5px 10px",
-                                                    borderRadius: 7,
-                                                    fontSize: 13,
-                                                    fontWeight: 500,
-                                                    border: "none",
-                                                    cursor: "pointer",
-                                                    transition: "background 0.15s, color 0.15s",
-                                                    background: filter === f
-                                                        ? "rgba(214,165,68,0.18)"
-                                                        : "rgba(255,255,255,0.05)",
-                                                    color: filter === f ? "#d6a544" : "#8b93a3",
-                                                    outline: filter === f ? "1px solid rgba(214,165,68,0.35)" : "none",
-                                                }}
-                                            >
-                                                {f ? f.toUpperCase() : "ALL"}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent><LeadTable leads={filteredLeads} /></CardContent>
-                    </Card>
-                </div>
+                {/* Lead table (full width, search + filter inside) */}
+                <LeadTable
+                    leads={filteredLeads}
+                    search={search}
+                    onSearchChange={setSearch}
+                    filter={filter}
+                    onFilterChange={setFilter}
+                />
             </div>
         </div>
     );

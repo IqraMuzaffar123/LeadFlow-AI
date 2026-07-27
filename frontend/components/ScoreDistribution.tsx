@@ -1,57 +1,25 @@
 "use client";
-import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    Cell,
-} from "recharts";
 import { Stats } from "@/lib/api";
 
 type ScoreData = NonNullable<Stats["score_distribution"]>;
 
-const CARD_STYLE: React.CSSProperties = {
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.06)",
+const GLASS_CARD: React.CSSProperties = {
+    background: "linear-gradient(160deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018))",
+    backdropFilter: "blur(12px)",
+    border: "1px solid rgba(255,255,255,0.075)",
+    boxShadow: "0 4px 22px rgba(0,0,0,0.45)",
     borderRadius: 16,
-    padding: "16px 20px",
+    padding: "20px 22px",
+    height: "100%",
 };
 
-const BUCKET_COLORS: Record<string, string> = {
-    "0-20": "#60a5fa",
-    "20-40": "#60a5fa",
-    "40-60": "#f59e0b",
-    "60-80": "#f59e0b",
-    "80-100": "#ef4444",
+const BUCKET_STYLES: Record<string, { gradFrom: string; gradTo: string; shadow: string }> = {
+    "0-20":   { gradFrom: "#1d4ed8", gradTo: "#3b82f6", shadow: "rgba(59,130,246,0.35)" },
+    "20-40":  { gradFrom: "#2563eb", gradTo: "#60a5fa", shadow: "rgba(96,165,250,0.3)" },
+    "40-60":  { gradFrom: "#b45309", gradTo: "#f59e0b", shadow: "rgba(245,158,11,0.35)" },
+    "60-80":  { gradFrom: "#d97706", gradTo: "#fbbf24", shadow: "rgba(251,191,36,0.3)" },
+    "80-100": { gradFrom: "#b91c1c", gradTo: "#ef4444", shadow: "rgba(239,68,68,0.35)" },
 };
-
-interface TooltipProps {
-    active?: boolean;
-    payload?: { value: number }[];
-    label?: string;
-}
-
-function CustomTooltip({ active, payload, label }: TooltipProps) {
-    if (!active || !payload || payload.length === 0) return null;
-    return (
-        <div
-            style={{
-                background: "#0d1320",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 8,
-                padding: "8px 12px",
-                fontSize: 14,
-                color: "#e2e8f0",
-            }}
-        >
-            <p style={{ margin: 0, fontWeight: 600 }}>Score {label}</p>
-            <p style={{ margin: 0, color: "#94a3b8" }}>{payload[0].value} leads</p>
-        </div>
-    );
-}
 
 const DEFAULT_BUCKETS: ScoreData = [
     { range: "0-20", count: 0 },
@@ -63,53 +31,86 @@ const DEFAULT_BUCKETS: ScoreData = [
 
 export function ScoreDistribution({ data }: { data?: ScoreData | null }) {
     const chartData = data && data.length > 0 ? data : DEFAULT_BUCKETS;
-    const isEmpty = !data || data.length === 0 || data.every(d => d.count === 0);
+    const maxCount = Math.max(...chartData.map(d => d.count), 1);
+    const BAR_MAX_HEIGHT = 140; // px
 
     return (
-        <div style={CARD_STYLE}>
-            <p style={{ margin: "0 0 16px 0", fontSize: 18, fontWeight: 700, color: "#e2e8f0" }}>
-                Score Distribution
+        <div style={GLASS_CARD}>
+            <p
+                style={{
+                    margin: "0 0 20px 0",
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color: "#f4f1e8",
+                    fontFamily: "'Playfair Display', Georgia, serif",
+                }}
+            >
+                Score distribution
             </p>
-            {isEmpty && !data ? (
-                <div
-                    style={{
-                        height: 220,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#475569",
-                        fontSize: 14,
-                    }}
-                >
-                    No score data available
-                </div>
-            ) : (
-                <ResponsiveContainer width="100%" height={220}>
-                    <BarChart
-                        data={chartData}
-                        margin={{ top: 0, right: 8, bottom: 0, left: -16 }}
-                    >
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis
-                            dataKey="range"
-                            tick={{ fill: "#94a3b8", fontSize: 14 }}
-                            axisLine={false}
-                            tickLine={false}
-                        />
-                        <YAxis
-                            tick={{ fill: "#94a3b8", fontSize: 14 }}
-                            axisLine={false}
-                            tickLine={false}
-                        />
-                        <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-                        <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                            {chartData.map((entry, index) => (
-                                <Cell key={index} fill={BUCKET_COLORS[entry.range] ?? "#60a5fa"} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
-            )}
+
+            {/* Bars container */}
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "flex-end",
+                    justifyContent: "space-between",
+                    height: BAR_MAX_HEIGHT + 36,
+                    gap: 8,
+                }}
+            >
+                {chartData.map((bucket) => {
+                    const style = BUCKET_STYLES[bucket.range] ?? BUCKET_STYLES["0-20"];
+                    const barH = maxCount > 0 ? Math.max((bucket.count / maxCount) * BAR_MAX_HEIGHT, bucket.count > 0 ? 6 : 0) : 0;
+                    return (
+                        <div
+                            key={bucket.range}
+                            style={{
+                                flex: 1,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: 4,
+                            }}
+                        >
+                            {/* Count label above bar */}
+                            <span
+                                style={{
+                                    fontSize: 14,
+                                    fontFamily: "monospace",
+                                    color: bucket.count > 0 ? "#f4f1e8" : "#40475a",
+                                    marginBottom: 2,
+                                }}
+                            >
+                                {bucket.count}
+                            </span>
+                            {/* Bar */}
+                            <div
+                                style={{
+                                    width: "100%",
+                                    height: barH,
+                                    background: `linear-gradient(180deg, ${style.gradFrom}, ${style.gradTo})`,
+                                    borderRadius: "5px 5px 0 0",
+                                    boxShadow: bucket.count > 0 ? `0 0 12px ${style.shadow}` : "none",
+                                    transition: "height 0.5s ease",
+                                    minHeight: 2,
+                                }}
+                            />
+                            {/* Range label below */}
+                            <span
+                                style={{
+                                    fontSize: 12,
+                                    fontFamily: "monospace",
+                                    color: "#79808f",
+                                    whiteSpace: "nowrap",
+                                    marginTop: 4,
+                                }}
+                            >
+                                {bucket.range}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }
