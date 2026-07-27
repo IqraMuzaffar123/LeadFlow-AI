@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
+import { Sidebar } from "@/components/Sidebar";
 
 export const metadata: Metadata = {
     title: "LeadFlow AI",
@@ -11,8 +9,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="en">
-            <body className={`${inter.className} bg-gray-50 min-h-screen`}>{children}</body>
+        <html lang="en" className="dark">
+            <body style={{ margin: 0, padding: 0, minHeight: "100vh", display: "flex" }}>
+                <Sidebar />
+                <main style={{ flex: 1, minHeight: "100vh", overflowX: "hidden" }}>
+                    {children}
+                </main>
+            </body>
         </html>
     );
 }

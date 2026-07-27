@@ -4,12 +4,9 @@ import Link from "next/link";
 import { apiFetch, Lead, Stats } from "@/lib/api";
 import { StatsCards } from "@/components/StatsCards";
 import { LeadTable } from "@/components/LeadTable";
-import { PipelineChart } from "@/components/PipelineChart";
 import { PipelineFunnel } from "@/components/PipelineFunnel";
 import { ScoreDistribution } from "@/components/ScoreDistribution";
 import { CategoryDonut } from "@/components/CategoryDonut";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function DashboardPage() {
     const [stats, setStats] = useState<Stats | null>(null);
@@ -62,43 +59,96 @@ export default function DashboardPage() {
     if (loading) return (
         <div className="p-8 flex items-center justify-center min-h-screen">
             <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                <p className="text-slate-400">Loading dashboard...</p>
+                <div
+                    style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        border: "2px solid #d6a544",
+                        borderTopColor: "transparent",
+                        animation: "spin 0.8s linear infinite",
+                    }}
+                />
+                <p style={{ color: "#9aa1b0", fontSize: 16 }}>Loading dashboard...</p>
             </div>
         </div>
     );
 
     return (
-        <div className="min-h-screen">
-            {/* Gradient Header */}
-            <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 px-8 py-8">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur">
-                                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                            </div>
-                            <h1 className="text-[32px] font-bold text-white">LeadFlow AI</h1>
-                        </div>
-                        <p className="text-blue-100 mt-2 text-[17px]">AI-Powered Lead Qualification & Outreach Automation</p>
-                    </div>
-                    <div className="flex gap-3">
-                        {newCount > 0 && (
-                            <Button onClick={processAllNew} disabled={processing}
-                                className="bg-white text-purple-700 hover:bg-blue-50 font-semibold shadow-lg text-[15px]">
-                                {processing ? `Processing ${processedCount}/${newCount}...` : `Process All (${newCount} new)`}
-                            </Button>
-                        )}
-                        <Link href="/upload">
-                            <Button className="bg-white/20 text-white border border-white/30 hover:bg-white/30 backdrop-blur text-[15px]">
-                                Upload CSV
-                            </Button>
-                        </Link>
-                    </div>
+        <div style={{ minHeight: "100vh" }} className="animate-rise">
+            {/* Page header */}
+            <div
+                style={{
+                    padding: "32px 36px 24px",
+                    borderBottom: "1px solid rgba(255,255,255,0.06)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: 16,
+                }}
+            >
+                <div>
+                    <h1
+                        style={{
+                            fontFamily: "'Playfair Display', Georgia, serif",
+                            fontSize: 30,
+                            fontWeight: 700,
+                            color: "#f4f1e8",
+                            margin: 0,
+                            lineHeight: 1.2,
+                        }}
+                    >
+                        Dashboard
+                    </h1>
+                    <p style={{ color: "#9aa1b0", fontSize: 15, marginTop: 6 }}>
+                        AI-powered lead qualification &amp; outreach automation
+                    </p>
+                </div>
+
+                <div style={{ display: "flex", gap: 10 }}>
+                    {newCount > 0 && (
+                        <button
+                            onClick={processAllNew}
+                            disabled={processing}
+                            style={{
+                                background: processing ? "rgba(214,165,68,0.4)" : "linear-gradient(135deg, #d6a544, #f4b942)",
+                                color: "#06080d",
+                                border: "none",
+                                borderRadius: 10,
+                                padding: "9px 18px",
+                                fontSize: 15,
+                                fontWeight: 600,
+                                cursor: processing ? "not-allowed" : "pointer",
+                                boxShadow: "0 2px 14px rgba(214,165,68,0.28)",
+                                transition: "opacity 0.18s",
+                            }}
+                        >
+                            {processing ? `Processing ${processedCount}/${newCount}...` : `Process All (${newCount} new)`}
+                        </button>
+                    )}
+                    <Link href="/upload" style={{ textDecoration: "none" }}>
+                        <button
+                            style={{
+                                background: "rgba(255,255,255,0.06)",
+                                color: "#f4f1e8",
+                                border: "1px solid rgba(255,255,255,0.12)",
+                                borderRadius: 10,
+                                padding: "9px 18px",
+                                fontSize: 15,
+                                fontWeight: 500,
+                                cursor: "pointer",
+                                backdropFilter: "blur(8px)",
+                                transition: "background 0.18s, border-color 0.18s",
+                            }}
+                        >
+                            Upload CSV
+                        </button>
+                    </Link>
                 </div>
             </div>
 
-            <div className="px-8 py-6 max-w-7xl mx-auto space-y-6 -mt-4">
+            <div style={{ padding: "28px 36px", maxWidth: 1400, display: "flex", flexDirection: "column", gap: 24 }}>
                 {stats && <StatsCards stats={stats} />}
 
                 {/* Charts Row */}
@@ -116,31 +166,76 @@ export default function DashboardPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {stats && (
-                        <Card className="bg-slate-900 border-slate-800 lg:col-span-1">
-                            <CardHeader><CardTitle className="text-slate-200">Pipeline</CardTitle></CardHeader>
+                        <Card
+                            className="lg:col-span-1"
+                            style={{
+                                background: "linear-gradient(160deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018))",
+                                backdropFilter: "blur(12px)",
+                                border: "1px solid rgba(255,255,255,0.075)",
+                                borderRadius: 16,
+                                boxShadow: "0 4px 22px rgba(0,0,0,0.45)",
+                            }}
+                        >
+                            <CardHeader>
+                                <CardTitle style={{ color: "#f4f1e8", fontFamily: "'Playfair Display', Georgia, serif", fontSize: 18 }}>
+                                    Pipeline
+                                </CardTitle>
+                            </CardHeader>
                             <CardContent><PipelineChart stats={stats} /></CardContent>
                         </Card>
                     )}
-                    <Card className="bg-slate-900 border-slate-800 lg:col-span-2">
+                    <Card
+                        className="lg:col-span-2"
+                        style={{
+                            background: "linear-gradient(160deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018))",
+                            backdropFilter: "blur(12px)",
+                            border: "1px solid rgba(255,255,255,0.075)",
+                            borderRadius: 16,
+                            boxShadow: "0 4px 22px rgba(0,0,0,0.45)",
+                        }}
+                    >
                         <CardHeader>
                             <div className="flex items-center justify-between flex-wrap gap-3">
-                                <CardTitle className="text-slate-200">Leads</CardTitle>
+                                <CardTitle style={{ color: "#f4f1e8", fontFamily: "'Playfair Display', Georgia, serif", fontSize: 18 }}>
+                                    Leads
+                                </CardTitle>
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="text"
                                         placeholder="Search leads..."
                                         value={search}
                                         onChange={e => setSearch(e.target.value)}
-                                        className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-[16px] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-48"
+                                        style={{
+                                            padding: "7px 12px",
+                                            borderRadius: 8,
+                                            background: "rgba(255,255,255,0.06)",
+                                            border: "1px solid rgba(255,255,255,0.10)",
+                                            color: "#f4f1e8",
+                                            fontSize: 15,
+                                            width: 180,
+                                            outline: "none",
+                                        }}
                                     />
                                     <div className="flex gap-1">
                                         {[null, "hot", "warm", "cold", "new"].map(f => (
-                                            <button key={f || "all"} onClick={() => setFilter(f)}
-                                                className={`px-2.5 py-1 rounded-md text-[14px] font-medium transition-colors ${
-                                                    filter === f
-                                                        ? "bg-blue-600 text-white"
-                                                        : "bg-slate-800 text-slate-400 hover:bg-slate-700"
-                                                }`}>
+                                            <button
+                                                key={f || "all"}
+                                                onClick={() => setFilter(f)}
+                                                style={{
+                                                    padding: "5px 10px",
+                                                    borderRadius: 7,
+                                                    fontSize: 13,
+                                                    fontWeight: 500,
+                                                    border: "none",
+                                                    cursor: "pointer",
+                                                    transition: "background 0.15s, color 0.15s",
+                                                    background: filter === f
+                                                        ? "rgba(214,165,68,0.18)"
+                                                        : "rgba(255,255,255,0.05)",
+                                                    color: filter === f ? "#d6a544" : "#8b93a3",
+                                                    outline: filter === f ? "1px solid rgba(214,165,68,0.35)" : "none",
+                                                }}
+                                            >
                                                 {f ? f.toUpperCase() : "ALL"}
                                             </button>
                                         ))}
