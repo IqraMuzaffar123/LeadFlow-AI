@@ -61,6 +61,14 @@ class LeadResponse(BaseModel):
     hubspot_contact_id: str | None
     hubspot_deal_id: str | None
     hubspot_synced_at: datetime | None
+    airtable_record_id: str | None = None
+    company_size: str | None = None
+    company_revenue: str | None = None
+    company_industry: str | None = None
+    company_linkedin: str | None = None
+    person_linkedin: str | None = None
+    person_title: str | None = None
+    enriched_at: datetime | None = None
     status: str
     error_message: str | None
     created_at: datetime
@@ -77,12 +85,31 @@ class LeadListResponse(BaseModel):
     total: int
 
 
+class PipelineFunnel(BaseModel):
+    ingested: int
+    enriched: int
+    qualified: int
+    hot: int
+    emails_generated: int
+    crm_synced: int
+
+
+class ScoreDistributionBucket(BaseModel):
+    range: str
+    count: int
+
+
 class StatsResponse(BaseModel):
     total: int
     by_status: dict[str, int]
     by_category: dict[str, int]
     today: int
     synced_to_hubspot: int
+    enriched: int = 0
+    pipeline_funnel: PipelineFunnel = Field(default_factory=lambda: PipelineFunnel(
+        ingested=0, enriched=0, qualified=0, hot=0, emails_generated=0, crm_synced=0
+    ))
+    score_distribution: list[ScoreDistributionBucket] = Field(default_factory=list)
 
 
 class ProcessResponse(BaseModel):
@@ -92,6 +119,7 @@ class ProcessResponse(BaseModel):
     ai_category: str | None = None
     emails_generated: int = 0
     hubspot_synced: bool = False
+    apollo_enriched: bool = False
     error: str | None = None
 
 
