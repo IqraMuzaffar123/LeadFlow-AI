@@ -22,11 +22,23 @@ export interface Lead {
     email: string;
     company: string | null;
     job_title: string | null;
+    phone: string | null;
+    website: string | null;
+    industry: string | null;
+    message: string | null;
     ai_score: number | null;
     ai_category: string | null;
     ai_reasoning: string | null;
     hubspot_contact_id: string | null;
     hubspot_deal_id: string | null;
+    airtable_record_id: string | null;
+    company_size: string | null;
+    company_revenue: string | null;
+    company_industry: string | null;
+    company_linkedin: string | null;
+    person_linkedin: string | null;
+    person_title: string | null;
+    enriched_at: string | null;
     status: string;
     created_at: string;
     emails?: Email[];
@@ -58,4 +70,14 @@ export interface Stats {
     by_category: Record<string, number>;
     today: number;
     synced_to_hubspot: number;
+    enriched: number;
+    pipeline_funnel?: {
+        ingested: number;
+        enriched: number;
+        qualified: number;
+        hot: number;
+        emails_generated: number;
+        crm_synced: number;
+    };
+    score_distribution?: { range: string; count: number }[];
 }
